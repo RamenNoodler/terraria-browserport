@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Mini 2D Sandbox</title>
+  <style>
+    canvas { background: #87CEEB; display: block; margin: 0 auto; }
+  </style>
+</head>
+<body>
+<canvas id="game" width="800" height="600"></canvas>
+<script>
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+const TILE_SIZE = 32;
+const WORLD_WIDTH = 25;
+const WORLD_HEIGHT = 18;
+
+// Create world array (0 = empty, 1 = dirt)
+let world = [];
+for (let y = 0; y < WORLD_HEIGHT; y++) {
+  world[y] = [];
+  for (let x = 0; x < WORLD_WIDTH; x++) {
+    world[y][x] = (y > 12) ? 1 : 0; // dirt ground at bottom
+  }
+}
+
+// Player object
+let player = {
+  x: 100,
+  y: 100,
+  width: 28,
+  height: 32,
+  velY: 0,
+  speed: 3,
+  onGround: false
+};
+
+let keys = {};
+
+// Input handling
+document.addEventListener("keydown", e => keys[e.key] = true);
+document.addEventListener("keyup", e => keys[e.key] = false);
+
+// Mouse click to place/remove blocks
+canvas.addEventListener("click", e => {
+  const x = Math.floor(e.offsetX / TILE_SIZE);
+  const y = Math.floor(e.offsetY / TILE_SIZE);
+  if (world[y][x] === 0) world[y][x] = 1; // place block
+  else world[y][x] = 0;                     // remove block
+});
+
+// Game loop
+function update() {
+  // Horizontal movement
+  if (keys["a"] || keys["ArrowLeft"]) player.x -= player.speed;
+  if (keys["d"] || keys["ArrowRight"]) player.x += player.speed;
+
+  // Gravity
+  player.velY += 0.5;
+  player.y += player.velY;
+
+  // Simple collision with ground
+  const bottom = Math.floor((player.y + player.height) / TILE_SIZE);
+  const left = Math.floor(player.x / TILE_SIZE);
+  const right = Math.floor((player.x + player.width) / TILE_SIZE);
+
+  if (bottom < WORLD_HEIGHT) {
+    if (world[bottom][left] === 1 || world[bottom][right] === 1) {
+      player.y = bottom * TILE_SIZE - player.height;
+      player.velY = 0;
+      player.onGround = true;
+    } else {
+      player.onGround = false;
+    }
+  }
+
+  // Jump
+  if ((keys["w"] || keys["ArrowUp"]) && player.onGround) {
+    player.velY = -10;
+    player.onGround = false;
+  }
+
+  draw();
+  requestAnimationFrame(update);
+}
+
+// Draw everything
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Draw world
+  for (let y = 0; y < WORLD_HEIGHT; y++) {
+    for (let x = 0; x < WORLD_WIDTH; x++) {
+      if (world[y][x] === 1) {
+        ctx.fillStyle = "saddlebrown";
+        ctx.fillRect(x*TILE_SIZE, y*TILE_SIZE, TILE_SIZE, TILE_SIZE);
+      }
+    }
+  }
+
+  // Draw player
+  ctx.fillStyle = "red";
+  ctx.fillRect(player.x, player.y, player.width, player.height);
+}
+
+update();
+</script>
+</body>
+</html>
