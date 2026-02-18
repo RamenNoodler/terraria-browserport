@@ -7,7 +7,7 @@
   </style>
 </head>
 <body>
-<canvas id="game" width="800" height="600"></canvas>
+<canvas id="game" width="800" height="576"></canvas>
 <script>
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
@@ -31,6 +31,7 @@ let player = {
   y: 100,
   width: 28,
   height: 32,
+  velX: 0,
   velY: 0,
   speed: 3,
   onGround: false
@@ -50,30 +51,50 @@ canvas.addEventListener("click", e => {
   else world[y][x] = 0;                     // remove block
 });
 
+// Collision checking (all four sides)
+function checkCollisions() {
+  const left = Math.floor(player.x / TILE_SIZE);
+  const right = Math.floor((player.x + player.width) / TILE_SIZE);
+  const top = Math.floor(player.y / TILE_SIZE);
+  const bottom = Math.floor((player.y + player.height) / TILE_SIZE);
+
+  // Vertical collision
+  if (player.velY > 0) { // falling
+    if (world[bottom]?.[left] === 1 || world[bottom]?.[right] === 1) {
+      player.y = bottom * TILE_SIZE - player.height;
+      player.velY = 0;
+      player.onGround = true;
+    }
+  } else if (player.velY < 0) { // jumping
+    if (world[top]?.[left] === 1 || world[top]?.[right] === 1) {
+      player.y = (top + 1) * TILE_SIZE;
+      player.velY = 0;
+    }
+  }
+
+  // Horizontal collision
+  if (player.velX < 0) { // moving left
+    if (world[top]?.[left] === 1 || world[bottom]?.[left] === 1) {
+      player.x = (left + 1) * TILE_SIZE;
+    }
+  } else if (player.velX > 0) { // moving right
+    if (world[top]?.[right] === 1 || world[bottom]?.[right] === 1) {
+      player.x = right * TILE_SIZE - player.width;
+    }
+  }
+}
+
 // Game loop
 function update() {
   // Horizontal movement
-  if (keys["a"] || keys["ArrowLeft"]) player.x -= player.speed;
-  if (keys["d"] || keys["ArrowRight"]) player.x += player.speed;
+  player.velX = 0;
+  if (keys["a"] || keys["ArrowLeft"]) player.velX = -player.speed;
+  if (keys["d"] || keys["ArrowRight"]) player.velX = player.speed;
+  player.x += player.velX;
 
   // Gravity
   player.velY += 0.5;
   player.y += player.velY;
-
-  // Simple collision with ground
-  const bottom = Math.floor((player.y + player.height) / TILE_SIZE);
-  const left = Math.floor(player.x / TILE_SIZE);
-  const right = Math.floor((player.x + player.width) / TILE_SIZE);
-
-  if (bottom < WORLD_HEIGHT) {
-    if (world[bottom][left] === 1 || world[bottom][right] === 1) {
-      player.y = bottom * TILE_SIZE - player.height;
-      player.velY = 0;
-      player.onGround = true;
-    } else {
-      player.onGround = false;
-    }
-  }
 
   // Jump
   if ((keys["w"] || keys["ArrowUp"]) && player.onGround) {
@@ -81,20 +102,23 @@ function update() {
     player.onGround = false;
   }
 
+  checkCollisions();
   draw();
   requestAnimationFrame(update);
 }
 
-// Draw everything
+// Draw world and player
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  // Draw world
+  // Draw tiles
   for (let y = 0; y < WORLD_HEIGHT; y++) {
     for (let x = 0; x < WORLD_WIDTH; x++) {
       if (world[y][x] === 1) {
         ctx.fillStyle = "saddlebrown";
         ctx.fillRect(x*TILE_SIZE, y*TILE_SIZE, TILE_SIZE, TILE_SIZE);
+        ctx.strokeStyle = "black";
+        ctx.strokeRect(x*TILE_SIZE, y*TILE_SIZE, TILE_SIZE, TILE_SIZE);
       }
     }
   }
