@@ -17,13 +17,36 @@ const WORLD_WIDTH = 25;
 const WORLD_HEIGHT = 18;
 
 // Create world array (0 = empty, 1 = dirt)
+// Procedural world generation
+const WORLD_HEIGHT = 256;      // max height
+const WORLD_WIDTH = 100;       // horizontal width
+const BEDROCK_HEIGHT = 2;      // bottom 2 rows are unbreakable
+const SKY_HEIGHT = 20;         // top 20 rows = empty sky
+
 let world = [];
+
 for (let y = 0; y < WORLD_HEIGHT; y++) {
   world[y] = [];
   for (let x = 0; x < WORLD_WIDTH; x++) {
-    world[y][x] = (y > 12) ? 1 : 0; // dirt ground at bottom
+
+    // Top sky
+    if (y < SKY_HEIGHT) {
+      world[y][x] = 0; // empty
+    }
+    // Bedrock at bottom
+    else if (y >= WORLD_HEIGHT - BEDROCK_HEIGHT) {
+      world[y][x] = 4; // bedrock
+    }
+    // Main terrain (dirt/stone)
+    else {
+      let groundThreshold = SKY_HEIGHT + 10 + Math.floor(Math.random() * 5);
+      if (y === groundThreshold) world[y][x] = 2; // grass
+      else if (y > groundThreshold && y < WORLD_HEIGHT - BEDROCK_HEIGHT) world[y][x] = 1; // dirt/stone
+      else world[y][x] = 0; // air
+    }
   }
 }
+
 
 // Player object
 let player = {
